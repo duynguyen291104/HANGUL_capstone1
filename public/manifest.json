@@ -1,15 +1,15 @@
 {
-  "name": "Korean TOPIK 1 Vocabulary Learning App",
+  "name": "Korean TOPIK 1 Learning App",
   "short_name": "TOPIK Learn",
-  "description": "Interactive Korean TOPIK Level 1 vocabulary learning with games, flashcards, and progress tracking",
+  "description": "Ứng dụng học từ vựng TOPIK 1 với flashcards, games và spaced repetition",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#2563eb",
+  "theme_color": "#3b82f6",
   "orientation": "portrait-primary",
   "scope": "/",
-  "lang": "en",
-  "categories": ["education", "language", "learning"],
+  "lang": "vi-VN",
+  "categories": ["education", "productivity"],
   "icons": [
     {
       "src": "/icon-192.png",
@@ -24,46 +24,56 @@
       "purpose": "maskable any"
     }
   ],
-  "screenshots": [
-    {
-      "src": "/screenshot-wide.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    },
-    {
-      "src": "/screenshot-narrow.png",
-      "sizes": "375x812",
-      "type": "image/png",
-      "form_factor": "narrow"
-    }
-  ],
   "shortcuts": [
     {
-      "name": "Quick Practice",
-      "short_name": "Practice",
-      "description": "Start a quick vocabulary practice session",
+      "name": "Flashcards",
+      "short_name": "Flashcards",
+      "description": "Học từ vựng với flashcards thông minh",
       "url": "/flashcards",
-      "icons": [
-        {
-          "src": "/shortcut-practice.png",
-          "sizes": "192x192"
-        }
-      ]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     },
     {
-      "name": "Learning Games",
-      "short_name": "Games",
-      "description": "Play interactive vocabulary games",
+      "name": "Games",
+      "short_name": "Games", 
+      "description": "Chơi game học từ vựng",
       "url": "/games",
-      "icons": [
-        {
-          "src": "/shortcut-games.png",
-          "sizes": "192x192"
-        }
-      ]
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Progress",
+      "short_name": "Progress",
+      "description": "Xem tiến độ học tập", 
+      "url": "/progress",
+      "icons": [{ "src": "/icon-192.png", "sizes": "192x192" }]
     }
   ],
+  "features": [
+    "Cross Platform",
+    "Background Sync", 
+    "Offline Support"
+  ],
+  "share_target": {
+    "action": "/import",
+    "method": "GET",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  },
+  "launch_handler": {
+    "client_mode": "focus-existing"
+  },
+  "handle_links": "preferred",
   "prefer_related_applications": false,
-  "related_applications": []
+  "file_handlers": [
+    {
+      "action": "/import",
+      "accept": {
+        "text/tab-separated-values": [".tsv"],
+        "text/csv": [".csv"],
+        "text/plain": [".txt"]
+      }
+    }
+  ]
 }

@@ -3,7 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { Gamepad2, Volume2, Target, Clock, Zap, CheckCircle } from 'lucide-react';
+import { Gamepad2, Volume2, Target, Clock, Zap, CheckCircle, Keyboard, Shuffle, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
 
 const games = [
@@ -13,39 +13,44 @@ const games = [
     description: 'Chọn nghĩa đúng cho từ tiếng Hàn',
     icon: Target,
     color: 'from-blue-500 to-purple-600',
+    href: '/games/quiz',
     available: true,
   },
   {
     id: 'listening',
-    title: 'Nghe hiểu',
-    description: 'Nghe và chọn từ tiếng Hàn tương ứng',
+    title: 'Luyện nghe',
+    description: 'Nghe và chọn nghĩa đúng của từ vựng',
     icon: Volume2,
-    color: 'from-green-500 to-teal-600',
-    available: false,
+    color: 'from-purple-500 to-pink-600',
+    href: '/games/listening',
+    available: true,
   },
   {
     id: 'typing',
-    title: 'Đánh máy',
-    description: 'Gõ từ tiếng Hàn theo nghĩa tiếng Việt',
-    icon: Gamepad2,
-    color: 'from-orange-500 to-red-600',
-    available: false,
+    title: 'Gõ từ',
+    description: 'Nhìn nghĩa và gõ từ tiếng Hàn tương ứng',
+    icon: Keyboard,
+    color: 'from-indigo-500 to-blue-600',
+    href: '/games/typing',
+    available: true,
   },
   {
     id: 'matching',
     title: 'Ghép đôi',
     description: 'Ghép từ tiếng Hàn với nghĩa tiếng Việt',
-    icon: CheckCircle,
-    color: 'from-pink-500 to-rose-600',
-    available: false,
+    icon: Shuffle,
+    color: 'from-green-500 to-emerald-600',
+    href: '/games/matching',
+    available: true,
   },
   {
     id: 'speed',
     title: 'Tốc độ',
-    description: 'Trả lời nhanh để ghi điểm cao',
+    description: 'Trả lời nhanh trong 60 giây để ghi điểm cao',
     icon: Zap,
-    color: 'from-yellow-500 to-orange-600',
-    available: false,
+    color: 'from-orange-500 to-red-600',
+    href: '/games/speed',
+    available: true,
   },
 ];
 
@@ -80,27 +85,19 @@ export default function GamesPage() {
               </CardHeader>
               
               <CardContent className="relative">
-                {game.available ? (
-                  <Link href={`/games/${game.id}`}>
-                    <Button className="w-full">
-                      Chơi ngay
-                    </Button>
-                  </Link>
-                ) : (
-                  <Button disabled className="w-full">
-                    Sắp ra mắt
+                <Link href={game.href}>
+                  <Button className="w-full">
+                    Chơi ngay
                   </Button>
-                )}
+                </Link>
                 
-                {game.available && (
-                  <div className="mt-4 space-y-2">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Điểm cao nhất</span>
-                      <span className="font-semibold">0</span>
-                    </div>
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Điểm cao nhất</span>
+                    <span className="font-semibold">0</span>
+                  </div>
                     <Progress value={0} className="h-2" />
                   </div>
-                )}
               </CardContent>
             </Card>
           );
