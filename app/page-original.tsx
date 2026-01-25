@@ -18,9 +18,24 @@ import {
   ChevronRight
 } from 'lucide-react';
 
+// TEST TAILWIND - Component này sẽ hiện gradient đẹp nếu Tailwind hoạt động
+function TailwindTest() {
+  return (
+    <div className="p-10 bg-gradient-to-r from-purple-500 via-pink-500 to-red-500 text-white">
+      <h1 className="text-4xl font-bold mb-4 animate-bounce">
+        🎉 TAILWIND V4 HOẠT ĐỘNG! 🎉
+      </h1>
+      <p className="text-xl">Nếu bạn thấy gradient đẹp này = CSS đã OK!</p>
+    </div>
+  );
+}
+
 export default function HomePage() {
   return (
     <div className="space-y-8">
+      {/* TAILWIND TEST - XÓA SAU KHI THẤY CSS OK */}
+      <TailwindTest />
+      
       {/* Header */}
       <div className="text-center space-y-4">
         <div className="flex items-center justify-center gap-3 mb-6">
@@ -44,7 +59,7 @@ export default function HomePage() {
             <div className="flex items-center justify-center w-10 h-10 rounded-full bg-blue-500 text-white mx-auto mb-3">
               <Book className="h-5 w-5" />
             </div>
-            <div className="text-2xl font-bold text-blue-700">1000</div>
+            <div className="text-2xl font-bold text-blue-700">0</div>
             <div className="text-sm text-blue-600">Từ vựng</div>
           </CardContent>
         </Card>
@@ -93,28 +108,28 @@ export default function HomePage() {
               </div>
               <div>
                 <CardTitle className="text-xl">Bắt đầu học</CardTitle>
-                <p className="text-muted-foreground">1000 từ vựng TOPIK 1 đã sẵn sàng!</p>
+                <p className="text-muted-foreground">Thêm từ vựng đầu tiên của bạn</p>
               </div>
             </div>
           </CardHeader>
           
           <CardContent className="relative">
             <p className="text-sm text-muted-foreground mb-6">
-              Import thành công 1000 từ vựng TOPIK 1 hoặc thêm từ vựng riêng của bạn.
+              Import danh sách từ vựng TOPIK 1 hoặc tạo bộ từ vựng riêng của bạn.
             </p>
             
             <div className="space-y-3">
               <Link href="/import">
                 <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
                   <Plus className="h-4 w-4 mr-2" />
-                  Import thêm từ vựng
+                  Import từ vựng
                 </Button>
               </Link>
               
               <Link href="/library">
                 <Button variant="outline" className="w-full">
                   <Book className="h-4 w-4 mr-2" />
-                  Xem thư viện (1000 từ)
+                  Xem thư viện
                 </Button>
               </Link>
             </div>
@@ -132,7 +147,7 @@ export default function HomePage() {
               </div>
               <div>
                 <CardTitle className="text-xl">Ôn tập hôm nay</CardTitle>
-                <p className="text-muted-foreground">1000 từ cần ôn tập</p>
+                <p className="text-muted-foreground">0 từ cần ôn tập</p>
               </div>
             </div>
           </CardHeader>
@@ -152,7 +167,7 @@ export default function HomePage() {
               
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Tiến độ hôm nay</span>
-                <span className="font-medium">0/1000</span>
+                <span className="font-medium">0/0</span>
               </div>
               <Progress value={0} className="h-2" />
             </div>
@@ -195,7 +210,7 @@ export default function HomePage() {
                 <Book className="h-6 w-6 text-white" />
               </div>
               <h3 className="font-semibold mb-2">Thư viện</h3>
-              <p className="text-sm text-muted-foreground">1000 từ vựng</p>
+              <p className="text-sm text-muted-foreground">Danh sách từ vựng</p>
               <ChevronRight className="h-4 w-4 mx-auto mt-2 group-hover:translate-x-1 transition-transform duration-300" />
             </CardContent>
           </Card>
