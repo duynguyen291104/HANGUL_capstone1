@@ -15,7 +15,8 @@ import {
   Clock,
   Target,
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  PenTool
 } from 'lucide-react';
 
 export default function HomePage() {
@@ -170,6 +171,19 @@ export default function HomePage() {
               </div>
               <h3 className="font-semibold mb-2">Trò chơi</h3>
               <p className="text-sm text-muted-foreground">5 game vui nhộn</p>
+              <ChevronRight className="h-4 w-4 mx-auto mt-2 group-hover:translate-x-1 transition-transform duration-300" />
+            </CardContent>
+          </Card>
+        </Link>
+
+        <Link href="/write">
+          <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
+            <CardContent className="p-6 text-center">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
+                <PenTool className="h-6 w-6 text-white" />
+              </div>
+              <h3 className="font-semibold mb-2">Luyện viết</h3>
+              <p className="text-sm text-muted-foreground">Viết chữ Hàn</p>
               <ChevronRight className="h-4 w-4 mx-auto mt-2 group-hover:translate-x-1 transition-transform duration-300" />
             </CardContent>
           </Card>
