@@ -32,23 +32,37 @@ A modern, interactive web application for learning Korean TOPIK Level 1 vocabula
 - **Language**: TypeScript (strict mode)
 - **Styling**: TailwindCSS + shadcn/ui components
 - **State Management**: Zustand with persistence
-- **Database**: IndexedDB via Dexie
+- **Database**: PostgreSQL 16 with Prisma ORM
+- **ORM**: Prisma 7 with driver adapters
 - **Audio**: Web Speech API
 - **Icons**: Lucide React
-- **Deployment**: Vercel-ready configuration
+- **Container**: Docker & Docker Compose
+- **CI/CD**: GitHub Actions
+- **Deployment**: Vercel-ready / Docker deployable
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js 18+ 
+- Node.js 20+ 
+- Docker & Docker Compose
 - npm or yarn
 
-### Installation
+### Quick Start with Make
+
+```bash
+# Full setup (install, docker, migrate, seed)
+make setup
+
+# Start development
+make dev
+```
+
+### Manual Setup
 
 1. **Clone the repository**
 ```bash
-git clone <repository-url>
-cd topik_learn
+git clone https://github.com/duynguyen291104/korean-topik-learning-app.git
+cd korean-topik-learning-app
 ```
 
 2. **Install dependencies**
@@ -56,24 +70,83 @@ cd topik_learn
 npm install
 ```
 
-3. **Start development server**
+3. **Setup environment**
+```bash
+cp .env.example .env
+# Edit .env if needed
+```
+
+4. **Start Docker containers (PostgreSQL + PgAdmin)**
+```bash
+docker compose up -d
+```
+
+5. **Run database migrations**
+```bash
+npm run prisma:migrate
+```
+
+6. **Seed sample data**
+```bash
+npm run prisma:seed
+```
+
+7. **Start development server**
 ```bash
 npm run dev
 ```
 
-4. **Open your browser**
+8. **Open your browser**
 Navigate to `http://localhost:3000`
+
+### Database Management
+
+**PgAdmin Web Interface**: `http://localhost:5050`
+- Email: `admin@topik.com`
+- Password: `admin123`
+
+**Prisma Studio**: Run `make db-studio` or `npm run prisma:studio`
+
+### Available Commands
+
+```bash
+# Development
+make dev              # Start dev server
+make build            # Build for production
+make start            # Start production server
+
+# Docker
+make docker-up        # Start PostgreSQL & PgAdmin
+make docker-down      # Stop containers
+make docker-restart   # Restart containers
+make docker-reset     # Reset containers & data
+
+# Database
+make db-migrate       # Run migrations
+make db-seed          # Seed sample data
+make db-studio        # Open Prisma Studio
+make db-test          # Test database connection
+make db-reset         # Reset database
+
+# Testing & Linting
+make test             # Run tests
+make lint             # Run ESLint
+make lint-fix         # Fix ESLint errors
+
+# Help
+make help             # Show all commands
+```
 
 ### Sample Data
 
-The application includes 50 sample Korean vocabulary words to get you started immediately:
-- Basic greetings (안녕하세요, 감사합니다)
-- Family terms (아버지, 어머니, 가족)
-- Common verbs (가다, 오다, 먹다, 마시다)
-- Question words (어디, 언제, 무엇, 누구)
-- Adjectives (크다, 작다, 좋다, 나쁘다)
+The application includes 5 sample Korean vocabulary words:
+- 안녕하세요 - Xin chào
+- 감사합니다 - Cảm ơn
+- 미안합니다 - Xin lỗi
+- 네 - Vâng/Có
+- 아니요 - Không
 
-Use the "Load Sample Data" button on the Import page to quickly populate your vocabulary.
+Database is seeded automatically during setup.
 
 ## 📁 Project Structure
 
@@ -155,6 +228,94 @@ Each vocabulary entry includes:
 - Achievement system with milestones
 
 ## 🌐 Deployment
+
+See detailed deployment guides:
+- **[Database & DevOps Setup](./DATABASE_README.md)** - PostgreSQL, Prisma, Docker
+- **[Deployment Guide](./DEPLOYMENT.md)** - Vercel, VPS, Docker, CI/CD
+
+### Quick Deploy Options
+
+**Vercel** (Recommended for easy deployment):
+```bash
+npm i -g vercel
+vercel
+```
+
+**Docker**:
+```bash
+docker build -t topik-app .
+docker run -p 3000:3000 topik-app
+```
+
+**Production with Docker Compose**:
+```bash
+docker compose -f docker-compose.prod.yml up -d
+```
+
+### Environment Variables
+
+Required for production:
+```env
+DATABASE_URL=postgresql://user:password@host:5432/database
+NEXT_PUBLIC_APP_URL=https://yourdomain.com
+NODE_ENV=production
+```
+
+## 🧪 API Endpoints
+
+- `GET /api/health` - Health check & database status
+- `GET /api/vocabulary` - Fetch all vocabulary
+- `GET /api/vocabulary?query=안녕` - Search vocabulary
+- `POST /api/vocabulary` - Add new vocabulary
+
+## 🔒 Security
+
+- Environment variables for sensitive data
+- PostgreSQL with password authentication
+- Docker container isolation
+- SSL/TLS support for production
+- Regular security audits via GitHub Actions
+
+## 📊 Database Schema
+
+Tables:
+- `vocabulary` - Korean vocabulary items
+- `vocab_progress` - Learning progress tracking
+- `game_results` - Game performance history
+- `user_stats` - Overall statistics
+- `user_settings` - User preferences
+- `study_sessions` - Study session logs
+
+See [Prisma Schema](./prisma/schema.prisma) for details.
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is open source and available under the MIT License.
+
+## 🙏 Acknowledgments
+
+- Korean language learning community
+- Next.js team for the amazing framework
+- shadcn/ui for beautiful components
+- Prisma for excellent ORM
+- All contributors and testers
+
+## 📧 Contact
+
+- GitHub: [@duynguyen291104](https://github.com/duynguyen291104)
+- Repository: [korean-topik-learning-app](https://github.com/duynguyen291104/korean-topik-learning-app)
+
+---
+
+Made with ❤️ for Korean language learners
 
 ### Deploy to Vercel
 1. **Connect to Vercel**

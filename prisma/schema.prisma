@@ -1,0 +1,122 @@
+// Prisma schema for Korean TOPIK Learning App
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// Vocabulary table - stores Korean words and their meanings
+model Vocabulary {
+  id        String   @id @default(cuid())
+  stt       Int?
+  ko        String   // Korean word
+  vi        String   // Vietnamese meaning
+  tags      String[] @default([])
+  addedAt   DateTime @default(now())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  progress  VocabProgress?
+  
+  @@index([ko])
+  @@index([addedAt])
+  @@map("vocabulary")
+}
+
+// Progress tracking table - spaced repetition system
+model VocabProgress {
+  vocabId        String   @id
+  easeFactor     Float    @default(2.5)
+  intervalDays   Int      @default(1)
+  repetitions    Int      @default(0)
+  dueDate        DateTime
+  correctAnswers Int      @default(0)
+  wrongAnswers   Int      @default(0)
+  lastStudied    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  vocabulary     Vocabulary @relation(fields: [vocabId], references: [id], onDelete: Cascade)
+
+  @@index([dueDate])
+  @@index([vocabId])
+  @@map("vocab_progress")
+}
+
+// Game results table - tracks performance in learning games
+model GameResult {
+  id              Int      @id @default(autoincrement())
+  gameType        String   // quiz, listening, typing, matching, speed
+  score           Int
+  correctAnswers  Int
+  totalQuestions  Int
+  timeSpent       Int      // in seconds
+  playedAt        DateTime @default(now())
+  userId          String?  @default("default")
+  
+  createdAt       DateTime @default(now())
+
+  @@index([gameType])
+  @@index([playedAt])
+  @@index([userId])
+  @@map("game_results")
+}
+
+// User statistics table - overall learning stats
+model UserStats {
+  id                String   @id @default("main")
+  totalWordsLearned Int      @default(0)
+  currentStreak     Int      @default(0)
+  bestStreak        Int      @default(0)
+  lastStudyDate     DateTime?
+  totalGamesPlayed  Int      @default(0)
+  averageAccuracy   Float    @default(0.0)
+  totalTimeSpent    Int      @default(0) // in seconds
+  level             Int      @default(1)
+  xp                Int      @default(0)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@map("user_stats")
+}
+
+// User settings table - app preferences
+model UserSettings {
+  id           String   @id @default("main")
+  theme        String   @default("light") // light, dark, system
+  audioEnabled Boolean  @default(true)
+  audioRate    Float    @default(1.0)
+  audioPitch   Float    @default(1.0)
+  autoplay     Boolean  @default(false)
+  voice        String?
+  language     String   @default("vi") // interface language
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("user_settings")
+}
+
+// Study sessions table - track daily study activity
+model StudySession {
+  id                Int      @id @default(autoincrement())
+  userId            String   @default("default")
+  sessionDate       DateTime @default(now())
+  wordsStudied      Int      @default(0)
+  correctAnswers    Int      @default(0)
+  wrongAnswers      Int      @default(0)
+  timeSpent         Int      @default(0) // in seconds
+  sessionType       String   // flashcards, quiz, listening, typing, matching, speed
+  completed         Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([sessionDate])
+  @@map("study_sessions")
+}
