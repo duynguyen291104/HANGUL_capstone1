@@ -172,8 +172,8 @@ export default function SpeedGamePage() {
             <p className="text-muted-foreground mb-6">
               Bạn cần ít nhất 4 từ vựng để chơi game tốc độ.
             </p>
-            <Link href="/import">
-              <Button>Thêm từ vựng</Button>
+            <Link href="/camera-vocab">
+              <Button>Camera to Vocab</Button>
             </Link>
           </CardContent>
         </Card>
@@ -218,9 +218,9 @@ export default function SpeedGamePage() {
               <Button onClick={startGame} className="w-full">
                 Chơi lại
               </Button>
-              <Link href="/games">
+              <Link href="/tournament">
                 <Button variant="outline" className="w-full">
-                  Về trang games
+                  Về trang giải đấu
                 </Button>
               </Link>
             </div>
@@ -260,7 +260,7 @@ export default function SpeedGamePage() {
               Bắt đầu game 60 giây!
             </Button>
             
-            <Link href="/games">
+            <Link href="/tournament">
               <Button variant="outline" className="w-full">
                 Quay lại
               </Button>
@@ -291,7 +291,7 @@ export default function SpeedGamePage() {
       <div className="max-w-2xl mx-auto">
         {/* Header with Timer */}
         <div className="flex items-center justify-between mb-6">
-          <Link href="/games">
+          <Link href="/tournament">
             <Button variant="ghost" size="sm">
               <ArrowLeft className="h-4 w-4 mr-2" />
               Thoát

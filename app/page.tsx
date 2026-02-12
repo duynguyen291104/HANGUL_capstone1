@@ -105,17 +105,17 @@ export default function HomePage() {
             </p>
             
             <div className="space-y-3">
-              <Link href="/import">
+              <Link href="/camera-vocab">
                 <Button className="w-full bg-gradient-to-r from-blue-500 to-purple-600 hover:from-blue-600 hover:to-purple-700 text-white">
                   <Plus className="h-4 w-4 mr-2" />
-                  Import thêm từ vựng
+                  Camera to Vocab
                 </Button>
               </Link>
               
-              <Link href="/library">
+              <Link href="/handwriting">
                 <Button variant="outline" className="w-full">
                   <Book className="h-4 w-4 mr-2" />
-                  Xem thư viện (1000 từ)
+                  Luyện chữ Hangul
                 </Button>
               </Link>
             </div>
@@ -144,10 +144,10 @@ export default function HomePage() {
             </p>
             
             <div className="space-y-3">
-              <Link href="/flashcards">
+              <Link href="/pronunciation">
                 <Button className="w-full bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white">
                   <Target className="h-4 w-4 mr-2" />
-                  Bắt đầu ôn tập
+                  Bắt đầu luyện phát âm
                 </Button>
               </Link>
               
@@ -163,53 +163,53 @@ export default function HomePage() {
 
       {/* Quick Access */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Link href="/games">
+        <Link href="/tournament">
           <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
             <CardContent className="p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-purple-500 to-pink-600 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                 <Gamepad2 className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-semibold mb-2">Trò chơi</h3>
-              <p className="text-sm text-muted-foreground">5 game vui nhộn</p>
+              <h3 className="font-semibold mb-2">Giải đấu</h3>
+              <p className="text-sm text-muted-foreground">Thi đấu thử thách</p>
               <ChevronRight className="h-4 w-4 mx-auto mt-2 group-hover:translate-x-1 transition-transform duration-300" />
             </CardContent>
           </Card>
         </Link>
 
-        <Link href="/write">
+        <Link href="/handwriting">
           <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
             <CardContent className="p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                 <PenTool className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-semibold mb-2">Luyện viết</h3>
-              <p className="text-sm text-muted-foreground">Viết chữ Hàn</p>
+              <h3 className="font-semibold mb-2">Luyện chữ</h3>
+              <p className="text-sm text-muted-foreground">Viết chữ Hangul</p>
               <ChevronRight className="h-4 w-4 mx-auto mt-2 group-hover:translate-x-1 transition-transform duration-300" />
             </CardContent>
           </Card>
         </Link>
 
-        <Link href="/progress">
+        <Link href="/monthly-tasks">
           <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
             <CardContent className="p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                 <BarChart3 className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-semibold mb-2">Tiến độ</h3>
-              <p className="text-sm text-muted-foreground">Thống kê chi tiết</p>
+              <h3 className="font-semibold mb-2">Nhiệm vụ</h3>
+              <p className="text-sm text-muted-foreground">Hằng tháng</p>
               <ChevronRight className="h-4 w-4 mx-auto mt-2 group-hover:translate-x-1 transition-transform duration-300" />
             </CardContent>
           </Card>
         </Link>
 
-        <Link href="/library">
+        <Link href="/feed">
           <Card className="group cursor-pointer hover:shadow-lg transition-all duration-300 hover:-translate-y-1">
             <CardContent className="p-6 text-center">
               <div className="w-12 h-12 rounded-full bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center mx-auto mb-4 group-hover:scale-110 transition-transform duration-300">
                 <Book className="h-6 w-6 text-white" />
               </div>
-              <h3 className="font-semibold mb-2">Thư viện</h3>
-              <p className="text-sm text-muted-foreground">1000 từ vựng</p>
+              <h3 className="font-semibold mb-2">Bảng tin</h3>
+              <p className="text-sm text-muted-foreground">Cập nhật hoạt động</p>
               <ChevronRight className="h-4 w-4 mx-auto mt-2 group-hover:translate-x-1 transition-transform duration-300" />
             </CardContent>
           </Card>

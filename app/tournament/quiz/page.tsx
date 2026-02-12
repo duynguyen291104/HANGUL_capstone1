@@ -132,8 +132,8 @@ export default function QuizGamePage() {
             <p className="text-muted-foreground mb-6">
               Bạn cần ít nhất 4 từ vựng để chơi game trắc nghiệm.
             </p>
-            <Link href="/import">
-              <Button>Thêm từ vựng</Button>
+            <Link href="/camera-vocab">
+              <Button>Camera to Vocab</Button>
             </Link>
           </CardContent>
         </Card>
@@ -173,9 +173,9 @@ export default function QuizGamePage() {
               <Button onClick={() => window.location.reload()} className="flex-1">
                 Chơi lại
               </Button>
-              <Link href="/games" className="flex-1">
+              <Link href="/tournament" className="flex-1">
                 <Button variant="outline" className="w-full">
-                  Về games
+                  Về giải đấu
                 </Button>
               </Link>
             </div>
@@ -200,7 +200,7 @@ export default function QuizGamePage() {
     <div className="min-h-screen p-4 space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <Link href="/games">
+        <Link href="/tournament">
           <Button variant="ghost" size="sm">
             <ArrowLeft className="h-4 w-4 mr-2" />
             Quay lại

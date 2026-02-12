@@ -5,23 +5,25 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { 
   Home, 
-  BookOpen, 
-  CreditCard, 
-  Gamepad2, 
-  BarChart3, 
-  Settings, 
-  Upload 
+  Mic, 
+  Trophy, 
+  CalendarCheck, 
+  User, 
+  Newspaper,
+  PenTool,
+  Camera
 } from 'lucide-react';
 import { cn } from '../lib/utils';
 
 const navigation = [
   { name: 'Trang chủ', href: '/', icon: Home },
-  { name: 'Thư viện', href: '/library', icon: BookOpen },
-  { name: 'Thẻ ghi nhớ', href: '/flashcards', icon: CreditCard },
-  { name: 'Trò chơi', href: '/games', icon: Gamepad2 },
-  { name: 'Tiến độ', href: '/progress', icon: BarChart3 },
-  { name: 'Import', href: '/import', icon: Upload },
-  { name: 'Cài đặt', href: '/settings', icon: Settings },
+  { name: 'Bảng tin', href: '/feed', icon: Newspaper },
+  { name: 'Luyện chữ', href: '/handwriting', icon: PenTool },
+  { name: 'Camera to Vocab', href: '/camera-vocab', icon: Camera },
+  { name: 'Phát âm', href: '/pronunciation', icon: Mic },
+  { name: 'Giải đấu', href: '/tournament', icon: Trophy },
+  { name: 'Nhiệm vụ hằng tháng', href: '/monthly-tasks', icon: CalendarCheck },
+  { name: 'Quản lý thông tin', href: '/profile', icon: User },
 ];
 
 interface NavigationProps {
@@ -62,13 +64,21 @@ interface MobileNavigationProps {
 export function MobileNavigation({ className = "" }: MobileNavigationProps) {
   const pathname = usePathname();
 
+  // 4 trang chính hiển thị trên mobile navigation
+  const mobileNav = [
+    navigation[0], // Trang chủ
+    navigation[1], // Bảng tin
+    navigation[4], // Phát âm
+    navigation[5], // Giải đấu
+  ];
+
   return (
     <div className={cn(
       "fixed bottom-0 left-0 right-0 bg-background border-t border-border z-50",
       className
     )}>
       <div className="grid grid-cols-4 gap-1 p-2">
-        {navigation.slice(0, 4).map((item) => {
+        {mobileNav.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
@@ -82,7 +92,7 @@ export function MobileNavigation({ className = "" }: MobileNavigationProps) {
               )}
             >
               <item.icon className="h-5 w-5 mb-1" />
-              <span>{item.name}</span>
+              <span className="truncate">{item.name}</span>
             </Link>
           );
         })}

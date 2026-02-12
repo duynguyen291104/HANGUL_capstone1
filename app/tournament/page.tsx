@@ -13,7 +13,7 @@ const games = [
     description: 'Chọn nghĩa đúng cho từ tiếng Hàn',
     icon: Target,
     color: 'from-blue-500 to-purple-600',
-    href: '/games/quiz',
+    href: '/tournament/quiz',
     available: true,
   },
   {
@@ -22,7 +22,7 @@ const games = [
     description: 'Nghe và chọn nghĩa đúng của từ vựng',
     icon: Volume2,
     color: 'from-purple-500 to-pink-600',
-    href: '/games/listening',
+    href: '/tournament/listening',
     available: true,
   },
   {
@@ -31,7 +31,7 @@ const games = [
     description: 'Nhìn nghĩa và gõ từ tiếng Hàn tương ứng',
     icon: Keyboard,
     color: 'from-indigo-500 to-blue-600',
-    href: '/games/typing',
+    href: '/tournament/typing',
     available: true,
   },
   {
@@ -40,7 +40,7 @@ const games = [
     description: 'Ghép từ tiếng Hàn với nghĩa tiếng Việt',
     icon: Shuffle,
     color: 'from-green-500 to-emerald-600',
-    href: '/games/matching',
+    href: '/tournament/matching',
     available: true,
   },
   {
@@ -49,20 +49,20 @@ const games = [
     description: 'Trả lời nhanh trong 60 giây để ghi điểm cao',
     icon: Zap,
     color: 'from-orange-500 to-red-600',
-    href: '/games/speed',
+    href: '/tournament/speed',
     available: true,
   },
 ];
 
-export default function GamesPage() {
+export default function TournamentPage() {
   return (
     <div className="space-y-8">
       <div className="text-center">
         <h1 className="text-4xl font-bold text-primary mb-4">
-          🎮 Trò chơi học từ vựng
+          🏆 Giải đấu
         </h1>
         <p className="text-muted-foreground">
-          Học từ vựng tiếng Hàn qua các mini game thú vị
+          Thi đấu và thử thách bản thân qua các mini game
         </p>
       </div>
 
