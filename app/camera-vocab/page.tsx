@@ -193,27 +193,40 @@ export default function CameraVocabPage() {
     setIsProcessing(true);
     setDetectedObjects([]);
 
-    // Mô phỏng quá trình nhận diện (thay thế bằng API thật trong production)
-    await new Promise(resolve => setTimeout(resolve, 2000));
+    try {
+      // Call AI backend API
+      const response = await fetch('http://localhost:5001/detect', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image: imageData })
+      });
 
-    // Random chọn 2-4 đối tượng từ danh sách mẫu
-    const objectKeys = Object.keys(SAMPLE_OBJECTS);
-    const numObjects = Math.floor(Math.random() * 3) + 2; // 2-4 objects
-    const randomObjects: DetectedObject[] = [];
-
-    for (let i = 0; i < numObjects; i++) {
-      const randomKey = objectKeys[Math.floor(Math.random() * objectKeys.length)];
-      const obj = SAMPLE_OBJECTS[randomKey];
-      if (!randomObjects.find(o => o.korean === obj.korean)) {
-        randomObjects.push({
-          ...obj,
-          confidence: Math.random() * 0.2 + 0.8 // 80-100%
-        });
+      if (!response.ok) {
+        throw new Error('Detection failed');
       }
-    }
 
-    setDetectedObjects(randomObjects);
-    setIsProcessing(false);
+      const result = await response.json();
+
+      if (result.success && result.objects) {
+        // Convert API response to DetectedObject format
+        const objects: DetectedObject[] = result.objects.map((obj: any) => ({
+          name: obj.name,
+          korean: obj.korean,
+          romanization: '', // API doesn't provide this yet
+          confidence: obj.confidence,
+          category: 'AI Detected'
+        }));
+
+        setDetectedObjects(objects);
+      }
+    } catch (error) {
+      console.error('Error processing image:', error);
+      alert('Không thể nhận diện. Vui lòng thử lại!');
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   const speakWord = (text: string) => {
