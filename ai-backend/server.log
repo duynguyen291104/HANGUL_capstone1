@@ -38,3 +38,23 @@ Speed: 1.9ms preprocess, 47.6ms inference, 0.7ms postprocess per image at shape 
  * Restarting with stat
  * Debugger is active!
  * Debugger PIN: 522-820-957
+ * Detected change in '/home/ngocduy/capstone1 /HANGUL /korean-topik-learning-app/ai-backend/app.py', reloading
+Loading YOLOv8 model...
+Model loaded successfully!
+==================================================
+AI Backend Server Starting...
+Supported classes: 80
+Korean vocab mappings: 80
+Romanization mappings: 80
+==================================================
+ * Restarting with stat
+Loading YOLOv8 model...
+Model loaded successfully!
+==================================================
+AI Backend Server Starting...
+Supported classes: 80
+Traceback (most recent call last):
+  File "/home/ngocduy/capstone1 /HANGUL /korean-topik-learning-app/ai-backend/app.py", line 176, in <module>
+    print("Korean vocab mappings:", len(vocab_map))
+                                        ^^^^^^^^^
+NameError: name 'vocab_map' is not defined. Did you mean: 'vocab_map_old'?

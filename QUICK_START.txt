@@ -1,0 +1,149 @@
+╔══════════════════════════════════════════════════════════════╗
+║                                                              ║
+║     📸 CAMERA-TO-VOCAB - HƯỚNG DẪN NHANH                    ║
+║     🇰🇷 Học từ vựng tiếng Hàn qua AI Detection              ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────┐
+│ ✅ VẤN ĐỀ ĐÃ ĐƯỢC SỬA!                                      │
+└──────────────────────────────────────────────────────────────┘
+
+Trước đây: ❌ Detection KHÔNG hiển thị từ vựng tiếng Hàn
+Bây giờ:   ✅ Detection hiển thị ĐẦY ĐỦ Korean + Romanization
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🚀 KHỞI ĐỘNG NHANH (Chọn 1 trong 3 cách)
+
+┌──────────────────────────────────────────────────────────────┐
+│ CÁCH 1: Sử dụng Makefile (KHUYẾN NGHỊ)                      │
+└──────────────────────────────────────────────────────────────┘
+
+  make camera-vocab
+
+  hoặc
+
+  make start-camera
+
+
+┌──────────────────────────────────────────────────────────────┐
+│ CÁCH 2: Sử dụng script tự động                               │
+└──────────────────────────────────────────────────────────────┘
+
+  ./start_camera_vocab.sh
+
+
+┌──────────────────────────────────────────────────────────────┐
+│ CÁCH 3: Khởi động thủ công (2 terminals)                    │
+└──────────────────────────────────────────────────────────────┘
+
+  Terminal 1:
+    cd ai-backend
+    python3 app.py
+
+  Terminal 2:
+    npm run dev
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🌐 TRUY CẬP
+
+Sau khi khởi động, mở trình duyệt:
+
+  http://localhost:3001/camera-vocab
+
+  (hoặc port 3000 nếu 3001 bị chiếm)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📱 CÁCH SỬ DỤNG
+
+1️⃣  Chọn nguồn hình ảnh:
+   📷 Bật Camera  → Chụp ảnh trực tiếp
+   📁 Tải ảnh lên → Upload từ máy
+
+2️⃣  Chụp hoặc upload ảnh vật thể
+
+3️⃣  Hệ thống AI sẽ hiển thị:
+
+   ┌─────────────────────────┐
+   │ 컵                      │  Confidence: 95%
+   │ keop                    │
+   │ Cup                     │
+   │                         │
+   │ [🔊 Nghe]  [💾 Lưu từ] │
+   └─────────────────────────┘
+
+4️⃣  Tương tác:
+   🔊 Click để nghe phát âm tiếng Hàn
+   💾 Lưu từ vào vocabulary
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🧪 KIỂM TRA HỆ THỐNG
+
+Test backend:
+  curl http://localhost:5001/health
+
+Test detection:
+  make test-detection
+
+  hoặc
+
+  python3 test_detection_api.py
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📊 THÔNG TIN HỆ THỐNG
+
+✅ Backend:   http://localhost:5001  (Flask API)
+✅ Frontend:  http://localhost:3001  (Next.js)
+✅ Model:     YOLOv8 Nano
+✅ Classes:   80 COCO objects
+✅ Korean:    80/80 mappings
+✅ Roman:     80/80 romanization
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+📚 TÀI LIỆU
+
+Chi tiết đầy đủ:
+  cat CAMERA_VOCAB_GUIDE.md
+  cat CAMERA_VOCAB_READY.md
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎯 VÍ DỤ SỬ DỤNG
+
+Học từ vựng hàng ngày:
+  📱 Điện thoại → 휴대전화 (hyudaejeonhwa)
+  💻 Laptop    → 노트북 (noteubuk)
+  ☕ Cốc nước  → 컵 (keop)
+  📕 Sách      → 책 (chaek)
+
+Học từ vựng món ăn:
+  🍕 Pizza     → 피자 (pija)
+  🍎 Táo       → 사과 (sagwa)
+  🍰 Bánh      → 케이크 (keikeu)
+
+Học từ vựng giao thông:
+  🚗 Ô tô      → 자동차 (jadongcha)
+  🚲 Xe đạp    → 자전거 (jajeongeo)
+  🚌 Xe buýt   → 버스 (beoseu)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+🎉 READY TO USE!
+
+Chạy ngay:
+
+  make camera-vocab
+
+Sau đó mở:
+
+  http://localhost:3001/camera-vocab
+
+Happy Learning Korean! 🇰🇷
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

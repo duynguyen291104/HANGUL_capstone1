@@ -214,7 +214,7 @@ export default function CameraVocabPage() {
         const objects: DetectedObject[] = result.objects.map((obj: any) => ({
           name: obj.name,
           korean: obj.korean,
-          romanization: '', // API doesn't provide this yet
+          romanization: obj.romanization || '',
           confidence: obj.confidence,
           category: 'AI Detected'
         }));

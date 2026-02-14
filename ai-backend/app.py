@@ -30,13 +30,28 @@ torch.load = original_load
 
 print("Model loaded successfully!")
 
-# Load Korean vocabulary mapping
-with open('vocab_mapping.json', 'r', encoding='utf-8') as f:
-    vocab_map = json.load(f)
+# Load Korean vocabulary mapping (COCO classes)
+with open('labels_ko.json', 'r', encoding='utf-8') as f:
+    labels_ko = json.load(f)
 
-# Load romanization mapping
-with open('romanization.json', 'r', encoding='utf-8') as f:
-    roman_map = json.load(f)
+# Load romanization mapping (COCO classes)
+with open('labels_ko_romanization.json', 'r', encoding='utf-8') as f:
+    labels_roman = json.load(f)
+
+# Backward compatibility: also load old vocab_mapping if exists
+try:
+    with open('vocab_mapping.json', 'r', encoding='utf-8') as f:
+        vocab_map_old = json.load(f)
+    labels_ko.update(vocab_map_old)
+except FileNotFoundError:
+    pass
+
+try:
+    with open('romanization.json', 'r', encoding='utf-8') as f:
+        roman_map_old = json.load(f)
+    labels_roman.update(roman_map_old)
+except FileNotFoundError:
+    pass
 
 def decode_image(image_data):
     """Decode base64 image to OpenCV format"""
@@ -87,8 +102,8 @@ def detect_objects():
                 confidence = float(box.conf[0])
                 
                 # Get Korean translation
-                korean = vocab_map.get(class_name, class_name)
-                romanization = roman_map.get(class_name, '')
+                korean = labels_ko.get(class_name, class_name)
+                romanization = labels_roman.get(class_name, '')
                 
                 # Get bounding box coordinates
                 x1, y1, x2, y2 = box.xyxy[0].tolist()
@@ -132,11 +147,11 @@ def add_vocab():
         if not english or not korean:
             return jsonify({'error': 'Both english and korean are required'}), 400
         
-        vocab_map[english] = korean
+        labels_ko[english] = korean
         
         # Save to file
-        with open('vocab_mapping.json', 'w', encoding='utf-8') as f:
-            json.dump(vocab_map, f, ensure_ascii=False, indent=2)
+        with open('labels_ko.json', 'w', encoding='utf-8') as f:
+            json.dump(labels_ko, f, ensure_ascii=False, indent=2)
         
         return jsonify({
             'success': True,
@@ -150,15 +165,15 @@ def add_vocab():
 def list_vocab():
     """List all vocabulary mappings"""
     return jsonify({
-        'total': len(vocab_map),
-        'mappings': vocab_map
+        'total': len(labels_ko),
+        'mappings': labels_ko
     })
 
 if __name__ == '__main__':
     print("=" * 50)
     print("AI Backend Server Starting...")
     print("Supported classes:", len(model.names))
-    print("Korean vocab mappings:", len(vocab_map))
-    print("Romanization mappings:", len(roman_map))
+    print("Korean vocab mappings:", len(labels_ko))
+    print("Romanization mappings:", len(labels_roman))
     print("=" * 50)
     app.run(host='0.0.0.0', port=5001, debug=True)
