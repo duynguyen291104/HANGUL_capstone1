@@ -59,6 +59,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-background text-foreground antialiased`}
+        suppressHydrationWarning
       >
         <PWAProvider>
           {/* Nền gradient "game hoá" */}

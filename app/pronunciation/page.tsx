@@ -1,17 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { useVocabularyStore } from '@/stores/vocabulary';
 import { useProgressStoreNew } from '@/stores/progress-new';
-import { Volume2, ArrowLeft, CheckCircle, XCircle } from 'lucide-react';
+import { Volume2, ArrowLeft, CheckCircle, XCircle, Mic, Square, Loader2 } from 'lucide-react';
 import { SpeechService } from '@/utils/speech';
 import { getNextReviewTime } from '@/lib/srs';
 import Link from 'next/link';
 
-export default function FlashcardsPage() {
+type RecordingState = 'idle' | 'recording' | 'processing' | 'completed';
+
+export default function PronunciationPage() {
   const { vocabulary, loadVocabulary } = useVocabularyStore();
   const { 
     ensureWord, 
@@ -22,49 +24,189 @@ export default function FlashcardsPage() {
   } = useProgressStoreNew();
   
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isFlipped, setIsFlipped] = useState(false);
   const [sessionWords, setSessionWords] = useState<string[]>([]);
   const [sessionStats, setSessionStats] = useState({ correct: 0, wrong: 0 });
   const [sessionStartTime] = useState(Date.now());
   const [speechService, setSpeechService] = useState<SpeechService | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  
+  // Recording states
+  const [recordingState, setRecordingState] = useState<RecordingState>('idle');
+  const [transcript, setTranscript] = useState('');
+  const [accuracy, setAccuracy] = useState<number | null>(null);
+  const [feedback, setFeedback] = useState<string>('');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recognitionRef = useRef<any>(null);
 
   const todayStats = getTodayStats();
 
   useEffect(() => {
-    // Initialize speech service only on client side
+    // Initialize speech service and recognition only on client side
     setSpeechService(new SpeechService());
     loadVocabulary();
+    
+    // Initialize Web Speech API for Korean
+    if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
+      const SpeechRecognition = (window as any).webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'ko-KR';
+      recognition.continuous = false;
+      recognition.interimResults = false;
+      
+      recognition.onresult = (event: any) => {
+        const result = event.results[0][0].transcript;
+        setTranscript(result);
+        checkPronunciation(result);
+      };
+      
+      recognition.onerror = (event: any) => {
+        console.error('Speech recognition error:', event.error);
+        setRecordingState('idle');
+        setFeedback('Không thể nhận diện giọng nói. Vui lòng thử lại.');
+      };
+      
+      recognitionRef.current = recognition;
+    }
   }, [loadVocabulary]);
 
   useEffect(() => {
     if (vocabulary.length > 0) {
-      const vocabIds = vocabulary.map(v => v.id);
-      const dueWords = getDueWords(vocabIds);
+      setIsLoading(false);
       
-      // Limit to 20 words per session for focused learning
-      let sessionWords = dueWords.slice(0, 20);
+      // Always use random words for pronunciation practice (20 words per session)
+      const randomWords = vocabulary
+        .sort(() => Math.random() - 0.5)
+        .slice(0, 20)
+        .map(v => v.id);
       
-      // If no due words, take some random words
-      if (sessionWords.length === 0) {
-        const randomWords = vocabulary
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 10)
-          .map(v => v.id);
-        sessionWords = randomWords;
-      }
-      
-      setSessionWords(sessionWords);
+      setSessionWords(randomWords);
       
       // Ensure word progress exists for all session words
-      sessionWords.forEach(id => ensureWord(id));
+      randomWords.forEach(id => ensureWord(id));
     }
-  }, [vocabulary, getDueWords, ensureWord]);
+  }, [vocabulary, ensureWord]);
 
   const currentWord = sessionWords.length > 0 
     ? vocabulary.find(v => v.id === sessionWords[currentIndex])
     : null;
 
   const currentProgress = currentWord ? getWordProgress(currentWord.id) : null;
+
+  // Check pronunciation accuracy
+  const checkPronunciation = (spokenText: string) => {
+    if (!currentWord) return;
+    
+    setRecordingState('processing');
+    
+    // Simple pronunciation check - comparing spoken text with expected Korean word
+    const normalizedSpoken = spokenText.trim().toLowerCase();
+    const normalizedExpected = currentWord.ko.trim().toLowerCase();
+    
+    // Calculate similarity (simple character matching)
+    let matches = 0;
+    const maxLen = Math.max(normalizedSpoken.length, normalizedExpected.length);
+    
+    for (let i = 0; i < Math.min(normalizedSpoken.length, normalizedExpected.length); i++) {
+      if (normalizedSpoken[i] === normalizedExpected[i]) {
+        matches++;
+      }
+    }
+    
+    const similarity = maxLen > 0 ? (matches / maxLen) * 100 : 0;
+    
+    setTimeout(() => {
+      setAccuracy(Math.round(similarity));
+      setRecordingState('completed');
+      
+      if (similarity >= 80) {
+        setFeedback('Tuyệt vời! Phát âm chính xác! 🎉');
+      } else if (similarity >= 60) {
+        setFeedback('Khá tốt! Cần luyện tập thêm một chút. 👍');
+      } else {
+        setFeedback('Hãy thử lại và nghe kỹ cách phát âm nhé. 💪');
+      }
+    }, 1000);
+  };
+
+  // Start/stop recording
+  const handleRecordToggle = async () => {
+    if (recordingState === 'idle') {
+      try {
+        // Reset previous results
+        setTranscript('');
+        setAccuracy(null);
+        setFeedback('');
+        
+        // Start recording audio
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mediaRecorder = new MediaRecorder(stream);
+        
+        audioChunksRef.current = [];
+        
+        mediaRecorder.ondataavailable = (event) => {
+          if (event.data.size > 0) {
+            audioChunksRef.current.push(event.data);
+          }
+        };
+        
+        mediaRecorder.onstop = () => {
+          stream.getTracks().forEach(track => track.stop());
+        };
+        
+        mediaRecorderRef.current = mediaRecorder;
+        mediaRecorder.start();
+        
+        // Start speech recognition
+        if (recognitionRef.current) {
+          recognitionRef.current.start();
+        }
+        
+        setRecordingState('recording');
+      } catch (error) {
+        console.error('Error accessing microphone:', error);
+        alert('Không thể truy cập microphone. Vui lòng cho phép quyền truy cập.');
+      }
+    } else if (recordingState === 'recording') {
+      // Stop recording
+      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+        mediaRecorderRef.current.stop();
+      }
+      
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+      }
+      
+      setRecordingState('processing');
+    }
+  };
+
+  const handleNext = () => {
+    if (!currentWord) return;
+    
+    // Save progress based on accuracy
+    if (accuracy !== null) {
+      const grade = accuracy >= 80 ? 3 : accuracy >= 60 ? 2 : accuracy >= 40 ? 1 : 0;
+      const wasCorrect = grade >= 2;
+      const studyTime = Math.floor((Date.now() - sessionStartTime) / (60 * 1000)) || 1;
+      
+      markResult(currentWord.id, grade, wasCorrect, studyTime);
+      
+      setSessionStats(prev => ({
+        correct: prev.correct + (wasCorrect ? 1 : 0),
+        wrong: prev.wrong + (wasCorrect ? 0 : 1),
+      }));
+    }
+    
+    // Reset and move to next word
+    setRecordingState('idle');
+    setTranscript('');
+    setAccuracy(null);
+    setFeedback('');
+    
+    // Just move to next, don't loop back
+    setCurrentIndex(prev => prev + 1);
+  };
 
   const handleGrade = (grade: 0 | 1 | 2 | 3) => {
     if (!currentWord) return;
@@ -100,180 +242,276 @@ export default function FlashcardsPage() {
     ? ((currentIndex + 1) / sessionWords.length) * 100 
     : 0;
 
-  if (sessionWords.length === 0) {
+  // Loading state
+  if (isLoading || vocabulary.length === 0) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <CheckCircle className="h-16 w-16 mx-auto text-green-500 mb-4" />
-            <CardTitle>🎉 Hoàn thành hết!</CardTitle>
-          </CardHeader>
-          <CardContent className="text-center space-y-4">
-            <p className="text-muted-foreground">
-              Bạn đã ôn hết từ vựng cần thiết hôm nay. Tuyệt vời!
-            </p>
-            <div className="bg-muted rounded-lg p-4">
-              <div className="text-2xl font-bold text-primary">{todayStats.correct}</div>
-              <div className="text-sm text-muted-foreground">Từ đã ôn hôm nay</div>
-            </div>
-            <Link href="/">
-              <Button className="w-full">
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Về trang chủ
-              </Button>
-            </Link>
+          <CardContent className="p-8 text-center space-y-4">
+            <Loader2 className="h-16 w-16 mx-auto animate-spin text-primary" />
+            <div className="text-lg font-medium">Đang tải từ vựng...</div>
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  if (!currentWord) return null;
+  // Completion state - only show when actually completed all words
+  if (sessionWords.length > 0 && currentIndex >= sessionWords.length) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-green-50 to-teal-50">
+        <Card className="w-full max-w-md border-2 border-green-200 shadow-xl">
+          <CardHeader className="text-center pb-4">
+            <div className="mb-4 animate-floaty">
+              <CheckCircle className="h-20 w-20 mx-auto text-green-500" />
+            </div>
+            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+              🎉 Hoàn thành xuất sắc!
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="text-center space-y-6">
+            <p className="text-lg text-muted-foreground">
+              Bạn đã hoàn thành {sessionWords.length} từ vựng phát âm!
+            </p>
+            
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-green-100 rounded-xl p-4 border-2 border-green-300">
+                <div className="text-3xl font-bold text-green-700">{sessionStats.correct}</div>
+                <div className="text-sm text-green-600 font-medium">Đúng</div>
+              </div>
+              <div className="bg-red-100 rounded-xl p-4 border-2 border-red-300">
+                <div className="text-3xl font-bold text-red-700">{sessionStats.wrong}</div>
+                <div className="text-sm text-red-600 font-medium">Sai</div>
+              </div>
+            </div>
+
+            <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
+              <div className="text-2xl font-bold text-blue-700">
+                {Math.round((sessionStats.correct / sessionWords.length) * 100)}%
+              </div>
+              <div className="text-sm text-blue-600">Độ chính xác</div>
+            </div>
+            
+            <div className="space-y-3 pt-4">
+              <Button 
+                className="w-full bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white font-bold py-6 rounded-xl"
+                onClick={() => {
+                  setCurrentIndex(0);
+                  setSessionStats({ correct: 0, wrong: 0 });
+                  setRecordingState('idle');
+                  setTranscript('');
+                  setAccuracy(null);
+                  setFeedback('');
+                  // Generate new random words
+                  const randomWords = vocabulary
+                    .sort(() => Math.random() - 0.5)
+                    .slice(0, 20)
+                    .map(v => v.id);
+                  setSessionWords(randomWords);
+                }}
+              >
+                Luyện tiếp 20 từ mới
+              </Button>
+              
+              <Link href="/">
+                <Button variant="outline" className="w-full py-6 rounded-xl">
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Về trang chủ
+                </Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (!currentWord) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center space-y-4">
+            <div className="text-lg font-medium text-muted-foreground">
+              Đang chuẩn bị từ vựng...
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen p-4 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 p-4 space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between max-w-4xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-sm">
         <Link href="/">
-          <Button variant="ghost" size="sm">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Quay lại
+          <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10">
+            <ArrowLeft className="h-5 w-5" />
           </Button>
         </Link>
         
-        <div className="text-center">
-          <div className="text-sm text-muted-foreground">
-            Thẻ {currentIndex + 1} / {sessionWords.length}
+        <div className="flex-1 mx-4">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="text-xs font-medium text-muted-foreground">
+              Từ {currentIndex + 1}/{sessionWords.length}
+            </span>
           </div>
-          <Progress value={progressPercentage} className="w-32 mt-1" />
+          <Progress value={progressPercentage} className="h-2.5 bg-gray-200" />
         </div>
         
-        <div className="flex gap-2 text-sm">
-          <span className="flex items-center gap-1 text-green-600">
+        <div className="flex gap-3 text-sm font-bold">
+          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-full">
             <CheckCircle className="h-4 w-4" />
             {sessionStats.correct}
           </span>
-          <span className="flex items-center gap-1 text-red-600">
+          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-700 rounded-full">
             <XCircle className="h-4 w-4" />
             {sessionStats.wrong}
           </span>
         </div>
       </div>
 
-      {/* Flashcard */}
-      <div className="max-w-2xl mx-auto">
-        <Card 
-          className={`min-h-[400px] cursor-pointer transition-all duration-300 hover:shadow-lg card-flip ${
-            isFlipped ? 'bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950 dark:to-purple-950' : ''
-          }`}
-          onClick={() => setIsFlipped(!isFlipped)}
-        >
-          <CardContent className="p-8 flex flex-col justify-center items-center text-center min-h-[400px]">
-            {!isFlipped ? (
-              // Front of card - Korean word
-              <div className="space-y-6">
-                <div className="text-6xl font-bold text-primary mb-6 animate-floaty">
+      {/* Main Content - Duolingo Style */}
+      <div className="max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[70vh]">
+        {/* Character Display (like Lily) */}
+        <div className="mb-8 animate-floaty">
+          <div className="w-44 h-44 rounded-full bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600 flex items-center justify-center shadow-2xl ring-4 ring-purple-200/50">
+            <div className="text-7xl filter drop-shadow-lg">🎤</div>
+          </div>
+        </div>
+
+        {/* Word Display with Audio */}
+        <Card className="w-full mb-8 border-2 border-purple-100 shadow-lg hover:shadow-xl transition-shadow">
+          <CardContent className="p-8">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 mb-3 korean-text">
                   {currentWord.ko}
                 </div>
-                
-                <Button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePlayAudio();
-                  }}
-                  variant="outline"
-                  size="lg"
-                  className="flex items-center gap-2"
-                >
-                  <Volume2 className="h-5 w-5" />
-                  Nghe phát âm
-                </Button>
-                
-                <p className="text-sm text-muted-foreground mt-8">
-                  Nhấp để xem nghĩa
-                </p>
-              </div>
-            ) : (
-              // Back of card - Vietnamese meaning
-              <div className="space-y-6 slide-up">
-                <div className="text-3xl text-muted-foreground mb-2">
-                  {currentWord.ko}
-                </div>
-                
-                <div className="text-5xl font-bold text-secondary mb-6">
+                <div className="text-xl text-muted-foreground font-medium">
                   {currentWord.vi}
                 </div>
-                
-                {currentWord.tags && (
-                  <div className="flex flex-wrap gap-2 justify-center">
-                    {currentWord.tags.map((tag, index) => (
+                {currentWord.tags && currentWord.tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+                    {currentWord.tags.slice(0, 2).map((tag, index) => (
                       <span
                         key={index}
-                        className="px-3 py-1 bg-accent/20 text-accent-foreground rounded-full text-xs"
+                        className="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
                       >
                         {tag}
                       </span>
                     ))}
                   </div>
                 )}
-                
-                {currentProgress && (
-                  <div className="bg-muted rounded-lg p-3 text-sm text-muted-foreground">
-                    <div>Đã học: {currentProgress.correct + currentProgress.wrong} lần</div>
-                    <div>Đúng: {currentProgress.correct} | Sai: {currentProgress.wrong}</div>
-                    <div>Ôn lại: {getNextReviewTime(currentProgress.srs)}</div>
-                  </div>
-                )}
               </div>
-            )}
+              <Button
+                onClick={handlePlayAudio}
+                variant="ghost"
+                size="lg"
+                className="rounded-full w-16 h-16 p-0 hover:bg-blue-50 hover:scale-110 transition-transform"
+              >
+                <Volume2 className="h-8 w-8 text-blue-600" />
+              </Button>
+            </div>
           </CardContent>
         </Card>
 
-        {/* Grade Buttons */}
-        {isFlipped && (
-          <div className="mt-6 space-y-4 bounce-in">
-            <p className="text-center text-sm text-muted-foreground">
-              Đánh giá mức độ nhớ từ này:
-            </p>
-            
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              <Button
-                onClick={() => handleGrade(0)}
-                variant="destructive"
-                className="h-16 flex flex-col gap-1"
-              >
-                <div className="font-bold">0</div>
-                <div className="text-xs">Quên hoàn toàn</div>
-              </Button>
-              
-              <Button
-                onClick={() => handleGrade(1)}
-                variant="outline"
-                className="h-16 flex flex-col gap-1 text-orange-600 border-orange-600"
-              >
-                <div className="font-bold">1</div>
-                <div className="text-xs">Khó nhớ</div>
-              </Button>
-              
-              <Button
-                onClick={() => handleGrade(2)}
-                variant="outline"
-                className="h-16 flex flex-col gap-1 text-blue-600 border-blue-600"
-              >
-                <div className="font-bold">2</div>
-                <div className="text-xs">Tạm được</div>
-              </Button>
-              
-              <Button
-                onClick={() => handleGrade(3)}
-                className="h-16 flex flex-col gap-1 bg-green-600 hover:bg-green-700"
-              >
-                <div className="font-bold">3</div>
-                <div className="text-xs">Dễ dàng</div>
-              </Button>
-            </div>
+        {/* Recording Button - Duolingo Style */}
+        <div className="mb-8">
+          <div className="relative">
+            <Button
+              onClick={handleRecordToggle}
+              disabled={recordingState === 'processing'}
+              size="lg"
+              className={`
+                rounded-full w-28 h-28 p-0 transition-all duration-300 shadow-2xl
+                ${recordingState === 'recording' 
+                  ? 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 recording-pulse' 
+                  : recordingState === 'processing'
+                  ? 'bg-gradient-to-br from-gray-400 to-gray-500'
+                  : 'bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:scale-110'
+                }
+              `}
+            >
+              {recordingState === 'processing' ? (
+                <Loader2 className="h-12 w-12 animate-spin text-white" />
+              ) : recordingState === 'recording' ? (
+                <Square className="h-11 w-11 text-white" />
+              ) : (
+                <Mic className="h-12 w-12 text-white" />
+              )}
+            </Button>
           </div>
+          <div className="text-center mt-5 text-base font-semibold text-gray-700">
+            {recordingState === 'idle' && '🎙️ Nhấn để bắt đầu'}
+            {recordingState === 'recording' && '⏹️ Nhấn để dừng ghi âm'}
+            {recordingState === 'processing' && '⏳ Đang xử lý...'}
+            {recordingState === 'completed' && '✅ Hoàn thành!'}
+          </div>
+        </div>
+
+        {/* Results Display */}
+        {transcript && (
+          <Card className="w-full mb-6 border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-blue-100 shadow-md">
+            <CardContent className="p-6">
+              <div className="text-center space-y-3">
+                <div className="text-sm font-semibold text-blue-600 uppercase tracking-wide">Bạn đã nói:</div>
+                <div className="text-3xl font-bold text-gray-800 korean-text">{transcript}</div>
+              </div>
+            </CardContent>
+          </Card>
         )}
+
+        {/* Accuracy and Feedback */}
+        {accuracy !== null && (
+          <Card className={`w-full mb-6 border-2 success-animation shadow-lg ${
+            accuracy >= 80 ? 'border-green-400 bg-gradient-to-br from-green-50 to-green-100' :
+            accuracy >= 60 ? 'border-yellow-400 bg-gradient-to-br from-yellow-50 to-yellow-100' :
+            'border-red-400 bg-gradient-to-br from-red-50 to-red-100'
+          }`}>
+            <CardContent className="p-8 text-center space-y-4">
+              <div className="text-7xl font-bold mb-3 animate-floaty" style={{
+                color: accuracy >= 80 ? '#16a34a' :
+                       accuracy >= 60 ? '#ca8a04' : '#dc2626'
+              }}>
+                {accuracy}%
+              </div>
+              <div className="text-xl font-bold text-gray-800">
+                {feedback}
+              </div>
+              {accuracy >= 80 && <div className="text-4xl">🎉</div>}
+              {accuracy >= 60 && accuracy < 80 && <div className="text-4xl">👍</div>}
+              {accuracy < 60 && <div className="text-4xl">💪</div>}
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Next Button */}
+        {recordingState === 'completed' && (
+          <Button
+            onClick={handleNext}
+            size="lg"
+            className="w-full max-w-sm bg-gradient-to-r from-green-500 via-green-600 to-teal-600 hover:from-green-600 hover:via-green-700 hover:to-teal-700 text-white font-bold py-7 rounded-2xl shadow-xl hover:shadow-2xl transition-all hover:scale-105 text-lg"
+          >
+            Tiếp theo →
+          </Button>
+        )}
+
+        {/* Skip Option */}
+        {recordingState === 'idle' && (
+          <Button
+            onClick={handleNext}
+            variant="ghost"
+            className="mt-4 text-muted-foreground hover:text-foreground font-medium"
+          >
+            Bỏ qua câu này →
+          </Button>
+        )}
+      </div>
+
+      {/* Bottom hint - Styled like Duolingo */}
+      <div className="text-center text-base font-bold text-gray-400 uppercase tracking-wider mt-8 pb-8 max-w-md mx-auto">
+        Tạm thời không nói được
       </div>
     </div>
   );
