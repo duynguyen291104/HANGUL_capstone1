@@ -4,49 +4,50 @@ import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { useVocabularyStore } from '@/stores/vocabulary';
-import { useProgressStoreNew } from '@/stores/progress-new';
-import { Volume2, ArrowLeft, CheckCircle, XCircle, Mic, Square, Loader2 } from 'lucide-react';
-import { SpeechService } from '@/utils/speech';
-import { getNextReviewTime } from '@/lib/srs';
+import { Volume2, ArrowLeft, CheckCircle, XCircle, Mic, Square } from 'lucide-react';
 import Link from 'next/link';
+
+// Sample vocabulary data
+const sampleVocabulary = [
+  { id: '1', ko: '안녕하세요', roman: 'annyeonghaseyo', vi: 'Xin chào' },
+  { id: '2', ko: '감사합니다', roman: 'gamsahamnida', vi: 'Cảm ơn' },
+  { id: '3', ko: '사랑해요', roman: 'saranghaeyo', vi: 'Tôi yêu bạn' },
+  { id: '4', ko: '미안해요', roman: 'mianhaeyo', vi: 'Xin lỗi' },
+  { id: '5', ko: '괜찮아요', roman: 'gwaenchanayo', vi: 'Không sao' },
+  { id: '6', ko: '네', roman: 'ne', vi: 'Vâng/Có' },
+  { id: '7', ko: '아니요', roman: 'aniyo', vi: 'Không' },
+  { id: '8', ko: '좋아요', roman: 'johayo', vi: 'Tốt/Thích' },
+  { id: '9', ko: '맛있어요', roman: 'masisseoyo', vi: 'Ngon' },
+  { id: '10', ko: '아름다워요', roman: 'areumdawoyo', vi: 'Đẹp' },
+  { id: '11', ko: '학생', roman: 'haksaeng', vi: 'Học sinh' },
+  { id: '12', ko: '선생님', roman: 'seonsaengnim', vi: 'Giáo viên' },
+  { id: '13', ko: '친구', roman: 'chingu', vi: 'Bạn bè' },
+  { id: '14', ko: '가족', roman: 'gajok', vi: 'Gia đình' },
+  { id: '15', ko: '집', roman: 'jip', vi: 'Nhà' },
+  { id: '16', ko: '학교', roman: 'hakgyo', vi: 'Trường học' },
+  { id: '17', ko: '음식', roman: 'eumsik', vi: 'Đồ ăn' },
+  { id: '18', ko: '물', roman: 'mul', vi: 'Nước' },
+  { id: '19', ko: '커피', roman: 'keopi', vi: 'Cà phê' },
+  { id: '20', ko: '차', roman: 'cha', vi: 'Trà' },
+];
 
 type RecordingState = 'idle' | 'recording' | 'processing' | 'completed';
 
 export default function PronunciationPage() {
-  const { vocabulary, loadVocabulary } = useVocabularyStore();
-  const { 
-    ensureWord, 
-    markResult, 
-    getDueWords, 
-    getWordProgress, 
-    getTodayStats 
-  } = useProgressStoreNew();
-  
+  const [mounted, setMounted] = useState(false);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [sessionWords, setSessionWords] = useState<string[]>([]);
   const [sessionStats, setSessionStats] = useState({ correct: 0, wrong: 0 });
-  const [sessionStartTime] = useState(Date.now());
-  const [speechService, setSpeechService] = useState<SpeechService | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  
-  // Recording states
   const [recordingState, setRecordingState] = useState<RecordingState>('idle');
   const [transcript, setTranscript] = useState('');
   const [accuracy, setAccuracy] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<string>('');
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
   const recognitionRef = useRef<any>(null);
-
-  const todayStats = getTodayStats();
+  const synthRef = useRef<SpeechSynthesisUtterance | null>(null);
 
   useEffect(() => {
-    // Initialize speech service and recognition only on client side
-    setSpeechService(new SpeechService());
-    loadVocabulary();
+    setMounted(true);
     
-    // Initialize Web Speech API for Korean
+    // Initialize Web Speech API for Korean recognition
     if (typeof window !== 'undefined' && 'webkitSpeechRecognition' in window) {
       const SpeechRecognition = (window as any).webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
@@ -63,47 +64,29 @@ export default function PronunciationPage() {
       recognition.onerror = (event: any) => {
         console.error('Speech recognition error:', event.error);
         setRecordingState('idle');
-        setFeedback('Không thể nhận diện giọng nói. Vui lòng thử lại.');
+        setFeedback('❌ Không thể nhận diện giọng nói. Vui lòng thử lại.');
       };
       
       recognitionRef.current = recognition;
     }
-  }, [loadVocabulary]);
 
-  useEffect(() => {
-    if (vocabulary.length > 0) {
-      setIsLoading(false);
-      
-      // Always use random words for pronunciation practice (20 words per session)
-      const randomWords = vocabulary
-        .sort(() => Math.random() - 0.5)
-        .slice(0, 20)
-        .map(v => v.id);
-      
-      setSessionWords(randomWords);
-      
-      // Ensure word progress exists for all session words
-      randomWords.forEach(id => ensureWord(id));
+    // Initialize Speech Synthesis
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      synthRef.current = new SpeechSynthesisUtterance();
+      synthRef.current.lang = 'ko-KR';
+      synthRef.current.rate = 0.8;
     }
-  }, [vocabulary, ensureWord]);
+  }, []);
 
-  const currentWord = sessionWords.length > 0 
-    ? vocabulary.find(v => v.id === sessionWords[currentIndex])
-    : null;
+  const currentWord = sampleVocabulary[currentIndex];
 
-  const currentProgress = currentWord ? getWordProgress(currentWord.id) : null;
-
-  // Check pronunciation accuracy
   const checkPronunciation = (spokenText: string) => {
-    if (!currentWord) return;
-    
     setRecordingState('processing');
     
-    // Simple pronunciation check - comparing spoken text with expected Korean word
-    const normalizedSpoken = spokenText.trim().toLowerCase();
-    const normalizedExpected = currentWord.ko.trim().toLowerCase();
+    const normalizedSpoken = spokenText.trim().toLowerCase().replace(/\s+/g, '');
+    const normalizedExpected = currentWord.ko.trim().toLowerCase().replace(/\s+/g, '');
     
-    // Calculate similarity (simple character matching)
+    // Calculate similarity
     let matches = 0;
     const maxLen = Math.max(normalizedSpoken.length, normalizedExpected.length);
     
@@ -116,164 +99,97 @@ export default function PronunciationPage() {
     const similarity = maxLen > 0 ? (matches / maxLen) * 100 : 0;
     
     setTimeout(() => {
-      setAccuracy(Math.round(similarity));
+      const finalAccuracy = Math.round(similarity);
+      setAccuracy(finalAccuracy);
       setRecordingState('completed');
       
       if (similarity >= 80) {
-        setFeedback('Tuyệt vời! Phát âm chính xác! 🎉');
+        setFeedback('🎉 Tuyệt vời! Phát âm chính xác!');
       } else if (similarity >= 60) {
-        setFeedback('Khá tốt! Cần luyện tập thêm một chút. 👍');
+        setFeedback('👍 Khá tốt! Cần luyện tập thêm một chút.');
+      } else if (similarity >= 40) {
+        setFeedback('💪 Cố gắng lên! Nghe kỹ và thử lại nhé.');
       } else {
-        setFeedback('Hãy thử lại và nghe kỹ cách phát âm nhé. 💪');
+        setFeedback('🎯 Hãy nghe kỹ cách phát âm và thử lại.');
       }
-    }, 1000);
+    }, 800);
   };
 
-  // Start/stop recording
   const handleRecordToggle = async () => {
     if (recordingState === 'idle') {
       try {
-        // Reset previous results
         setTranscript('');
         setAccuracy(null);
         setFeedback('');
         
-        // Start recording audio
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        const mediaRecorder = new MediaRecorder(stream);
-        
-        audioChunksRef.current = [];
-        
-        mediaRecorder.ondataavailable = (event) => {
-          if (event.data.size > 0) {
-            audioChunksRef.current.push(event.data);
-          }
-        };
-        
-        mediaRecorder.onstop = () => {
-          stream.getTracks().forEach(track => track.stop());
-        };
-        
-        mediaRecorderRef.current = mediaRecorder;
-        mediaRecorder.start();
-        
-        // Start speech recognition
         if (recognitionRef.current) {
           recognitionRef.current.start();
+          setRecordingState('recording');
+        } else {
+          alert('⚠️ Trình duyệt không hỗ trợ nhận diện giọng nói. Vui lòng sử dụng Chrome hoặc Edge.');
         }
-        
-        setRecordingState('recording');
       } catch (error) {
-        console.error('Error accessing microphone:', error);
-        alert('Không thể truy cập microphone. Vui lòng cho phép quyền truy cập.');
+        console.error('Error starting recognition:', error);
+        alert('❌ Không thể khởi động nhận diện giọng nói. Vui lòng cho phép quyền microphone.');
       }
     } else if (recordingState === 'recording') {
-      // Stop recording
-      if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-        mediaRecorderRef.current.stop();
-      }
-      
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
-      
       setRecordingState('processing');
     }
   };
 
+  const handlePlayAudio = () => {
+    if (synthRef.current && typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+      synthRef.current.text = currentWord.ko;
+      window.speechSynthesis.speak(synthRef.current);
+    }
+  };
+
   const handleNext = () => {
-    if (!currentWord) return;
-    
-    // Save progress based on accuracy
     if (accuracy !== null) {
-      const grade = accuracy >= 80 ? 3 : accuracy >= 60 ? 2 : accuracy >= 40 ? 1 : 0;
-      const wasCorrect = grade >= 2;
-      const studyTime = Math.floor((Date.now() - sessionStartTime) / (60 * 1000)) || 1;
-      
-      markResult(currentWord.id, grade, wasCorrect, studyTime);
-      
+      const wasCorrect = accuracy >= 60;
       setSessionStats(prev => ({
         correct: prev.correct + (wasCorrect ? 1 : 0),
         wrong: prev.wrong + (wasCorrect ? 0 : 1),
       }));
     }
     
-    // Reset and move to next word
     setRecordingState('idle');
     setTranscript('');
     setAccuracy(null);
     setFeedback('');
     
-    // Just move to next, don't loop back
-    setCurrentIndex(prev => prev + 1);
-  };
-
-  const handleGrade = (grade: 0 | 1 | 2 | 3) => {
-    if (!currentWord) return;
-    
-    const wasCorrect = grade >= 2;
-    const studyTime = Math.floor((Date.now() - sessionStartTime) / (60 * 1000)) || 1;
-    
-    markResult(currentWord.id, grade, wasCorrect, studyTime);
-    
-    setSessionStats(prev => ({
-      correct: prev.correct + (wasCorrect ? 1 : 0),
-      wrong: prev.wrong + (wasCorrect ? 0 : 1),
-    }));
-    
-    // Move to next card
-    if (currentIndex < sessionWords.length - 1) {
+    if (currentIndex < sampleVocabulary.length - 1) {
       setCurrentIndex(prev => prev + 1);
-      setIsFlipped(false);
     } else {
-      // Session complete - restart
-      setCurrentIndex(0);
-      setIsFlipped(false);
+      setCurrentIndex(0); // Loop back to start
     }
   };
 
-  const handlePlayAudio = () => {
-    if (currentWord && speechService) {
-      speechService.speak(currentWord.ko);
-    }
-  };
+  const progressPercentage = ((currentIndex + 1) / sampleVocabulary.length) * 100;
 
-  const progressPercentage = sessionWords.length > 0 
-    ? ((currentIndex + 1) / sessionWords.length) * 100 
-    : 0;
-
-  // Loading state
-  if (isLoading || vocabulary.length === 0) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center space-y-4">
-            <Loader2 className="h-16 w-16 mx-auto animate-spin text-primary" />
-            <div className="text-lg font-medium">Đang tải từ vựng...</div>
-          </CardContent>
-        </Card>
-      </div>
-    );
+  // Wait for client-side mounting
+  if (!mounted) {
+    return null;
   }
 
-  // Completion state - only show when actually completed all words
-  if (sessionWords.length > 0 && currentIndex >= sessionWords.length) {
+  // Completion state
+  if (currentIndex >= sampleVocabulary.length && sessionStats.correct + sessionStats.wrong > 0) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-green-50 to-teal-50">
         <Card className="w-full max-w-md border-2 border-green-200 shadow-xl">
           <CardHeader className="text-center pb-4">
-            <div className="mb-4 animate-floaty">
+            <div className="mb-4">
               <CheckCircle className="h-20 w-20 mx-auto text-green-500" />
             </div>
-            <CardTitle className="text-3xl font-bold bg-gradient-to-r from-green-600 to-teal-600 bg-clip-text text-transparent">
+            <CardTitle className="text-3xl font-bold text-green-600">
               🎉 Hoàn thành xuất sắc!
             </CardTitle>
           </CardHeader>
           <CardContent className="text-center space-y-6">
-            <p className="text-lg text-muted-foreground">
-              Bạn đã hoàn thành {sessionWords.length} từ vựng phát âm!
-            </p>
-            
             <div className="grid grid-cols-2 gap-4">
               <div className="bg-green-100 rounded-xl p-4 border-2 border-green-300">
                 <div className="text-3xl font-bold text-green-700">{sessionStats.correct}</div>
@@ -284,37 +200,20 @@ export default function PronunciationPage() {
                 <div className="text-sm text-red-600 font-medium">Sai</div>
               </div>
             </div>
-
-            <div className="bg-blue-50 rounded-xl p-4 border-2 border-blue-200">
-              <div className="text-2xl font-bold text-blue-700">
-                {Math.round((sessionStats.correct / sessionWords.length) * 100)}%
-              </div>
-              <div className="text-sm text-blue-600">Độ chính xác</div>
-            </div>
             
             <div className="space-y-3 pt-4">
               <Button 
-                className="w-full bg-gradient-to-r from-green-500 to-teal-600 hover:from-green-600 hover:to-teal-700 text-white font-bold py-6 rounded-xl"
+                className="w-full bg-gradient-to-r from-green-500 to-teal-600 text-white font-bold py-6"
                 onClick={() => {
                   setCurrentIndex(0);
                   setSessionStats({ correct: 0, wrong: 0 });
-                  setRecordingState('idle');
-                  setTranscript('');
-                  setAccuracy(null);
-                  setFeedback('');
-                  // Generate new random words
-                  const randomWords = vocabulary
-                    .sort(() => Math.random() - 0.5)
-                    .slice(0, 20)
-                    .map(v => v.id);
-                  setSessionWords(randomWords);
                 }}
               >
-                Luyện tiếp 20 từ mới
+                Luyện lại
               </Button>
               
               <Link href="/">
-                <Button variant="outline" className="w-full py-6 rounded-xl">
+                <Button variant="outline" className="w-full py-6">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Về trang chủ
                 </Button>
@@ -326,162 +225,153 @@ export default function PronunciationPage() {
     );
   }
 
-  if (!currentWord) {
-    return (
-      <div className="min-h-screen flex items-center justify-center p-4">
-        <Card className="w-full max-w-md">
-          <CardContent className="p-8 text-center space-y-4">
-            <div className="text-lg font-medium text-muted-foreground">
-              Đang chuẩn bị từ vựng...
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50/30 via-purple-50/20 to-pink-50/30 p-4 space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-pink-50 p-4">
       {/* Header */}
-      <div className="flex items-center justify-between max-w-4xl mx-auto bg-white/80 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-sm">
-        <Link href="/">
-          <Button variant="ghost" size="icon" className="rounded-full hover:bg-primary/10">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-        </Link>
-        
-        <div className="flex-1 mx-4">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="text-xs font-medium text-muted-foreground">
-              Từ {currentIndex + 1}/{sessionWords.length}
+      <div className="max-w-4xl mx-auto mb-6">
+        <div className="flex items-center justify-between bg-white/90 backdrop-blur-sm rounded-2xl px-4 py-3 shadow-md">
+          <Link href="/">
+            <Button variant="ghost" size="icon" className="rounded-full">
+              <ArrowLeft className="h-5 w-5" />
+            </Button>
+          </Link>
+          
+          <div className="flex-1 mx-4">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-sm font-semibold text-gray-700">
+                Từ {currentIndex + 1}/{sampleVocabulary.length}
+              </span>
+            </div>
+            <Progress value={progressPercentage} className="h-2.5" />
+          </div>
+          
+          <div className="flex gap-3 text-sm font-bold">
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-full">
+              <CheckCircle className="h-4 w-4" />
+              {sessionStats.correct}
+            </span>
+            <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-700 rounded-full">
+              <XCircle className="h-4 w-4" />
+              {sessionStats.wrong}
             </span>
           </div>
-          <Progress value={progressPercentage} className="h-2.5 bg-gray-200" />
-        </div>
-        
-        <div className="flex gap-3 text-sm font-bold">
-          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-green-100 text-green-700 rounded-full">
-            <CheckCircle className="h-4 w-4" />
-            {sessionStats.correct}
-          </span>
-          <span className="flex items-center gap-1.5 px-3 py-1.5 bg-red-100 text-red-700 rounded-full">
-            <XCircle className="h-4 w-4" />
-            {sessionStats.wrong}
-          </span>
         </div>
       </div>
 
-      {/* Main Content - Duolingo Style */}
-      <div className="max-w-2xl mx-auto flex flex-col items-center justify-center min-h-[70vh]">
-        {/* Character Display (like Lily) */}
-        <div className="mb-8 animate-floaty">
-          <div className="w-44 h-44 rounded-full bg-gradient-to-br from-purple-400 via-purple-500 to-purple-600 flex items-center justify-center shadow-2xl ring-4 ring-purple-200/50">
-            <div className="text-7xl filter drop-shadow-lg">🎤</div>
-          </div>
+      {/* Main Content */}
+      <div className="max-w-2xl mx-auto space-y-8">
+        
+        {/* Instruction */}
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">
+            🎤 Luyện phát âm tiếng Hàn
+          </h2>
+          <p className="text-gray-600">
+            Nhấn vào micro và đọc theo từ dưới đây
+          </p>
         </div>
 
-        {/* Word Display with Audio */}
-        <Card className="w-full mb-8 border-2 border-purple-100 shadow-lg hover:shadow-xl transition-shadow">
-          <CardContent className="p-8">
-            <div className="flex items-center justify-between">
-              <div className="flex-1">
-                <div className="text-6xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600 mb-3 korean-text">
-                  {currentWord.ko}
-                </div>
-                <div className="text-xl text-muted-foreground font-medium">
-                  {currentWord.vi}
-                </div>
-                {currentWord.tags && currentWord.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
-                    {currentWord.tags.slice(0, 2).map((tag, index) => (
-                      <span
-                        key={index}
-                        className="px-2.5 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
+        {/* Word Card */}
+        <Card className="border-4 border-purple-200 shadow-2xl bg-white">
+          <CardContent className="p-8 space-y-6">
+            {/* Korean Word */}
+            <div className="text-center space-y-4">
+              <div className="text-7xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-600 via-pink-600 to-blue-600">
+                {currentWord.ko}
               </div>
+              
+              {/* Romanization */}
+              <div className="text-3xl font-semibold text-purple-600">
+                {currentWord.roman}
+              </div>
+              
+              {/* Vietnamese meaning */}
+              <div className="text-xl text-gray-600 font-medium">
+                {currentWord.vi}
+              </div>
+            </div>
+
+            {/* Play Audio Button */}
+            <div className="flex justify-center">
               <Button
                 onClick={handlePlayAudio}
-                variant="ghost"
                 size="lg"
-                className="rounded-full w-16 h-16 p-0 hover:bg-blue-50 hover:scale-110 transition-transform"
+                variant="outline"
+                className="rounded-full px-8 py-6 text-lg font-bold border-2 border-blue-400 hover:bg-blue-50 hover:border-blue-600 transition-all hover:scale-105"
               >
-                <Volume2 className="h-8 w-8 text-blue-600" />
+                <Volume2 className="h-6 w-6 mr-2 text-blue-600" />
+                Nghe phát âm
               </Button>
             </div>
           </CardContent>
         </Card>
 
-        {/* Recording Button - Duolingo Style */}
-        <div className="mb-8">
-          <div className="relative">
-            <Button
-              onClick={handleRecordToggle}
-              disabled={recordingState === 'processing'}
-              size="lg"
-              className={`
-                rounded-full w-28 h-28 p-0 transition-all duration-300 shadow-2xl
-                ${recordingState === 'recording' 
-                  ? 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 recording-pulse' 
-                  : recordingState === 'processing'
-                  ? 'bg-gradient-to-br from-gray-400 to-gray-500'
-                  : 'bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 hover:scale-110'
-                }
-              `}
-            >
-              {recordingState === 'processing' ? (
-                <Loader2 className="h-12 w-12 animate-spin text-white" />
-              ) : recordingState === 'recording' ? (
-                <Square className="h-11 w-11 text-white" />
-              ) : (
-                <Mic className="h-12 w-12 text-white" />
-              )}
-            </Button>
-          </div>
-          <div className="text-center mt-5 text-base font-semibold text-gray-700">
-            {recordingState === 'idle' && '🎙️ Nhấn để bắt đầu'}
-            {recordingState === 'recording' && '⏹️ Nhấn để dừng ghi âm'}
-            {recordingState === 'processing' && '⏳ Đang xử lý...'}
-            {recordingState === 'completed' && '✅ Hoàn thành!'}
+        {/* Microphone Button */}
+        <div className="flex flex-col items-center space-y-4">
+          <Button
+            onClick={handleRecordToggle}
+            disabled={recordingState === 'processing'}
+            size="lg"
+            className={`
+              rounded-full w-32 h-32 shadow-2xl transition-all duration-300 text-white
+              ${recordingState === 'recording' 
+                ? 'bg-gradient-to-br from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 animate-pulse scale-110' 
+                : recordingState === 'processing'
+                ? 'bg-gradient-to-br from-gray-400 to-gray-500 cursor-not-allowed'
+                : 'bg-gradient-to-br from-purple-500 via-purple-600 to-pink-600 hover:from-purple-600 hover:via-purple-700 hover:to-pink-700 hover:scale-110'
+              }
+            `}
+          >
+            {recordingState === 'processing' ? (
+              <div className="flex flex-col items-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent"></div>
+              </div>
+            ) : recordingState === 'recording' ? (
+              <Square className="h-14 w-14" />
+            ) : (
+              <Mic className="h-14 w-14" />
+            )}
+          </Button>
+          
+          <div className="text-center">
+            <p className="text-lg font-bold text-gray-700">
+              {recordingState === 'idle' && '🎙️ Nhấn micro để ghi âm'}
+              {recordingState === 'recording' && '🔴 Đang ghi âm... Nhấn để dừng'}
+              {recordingState === 'processing' && '⏳ Đang phân tích...'}
+              {recordingState === 'completed' && '✅ Hoàn thành!'}
+            </p>
           </div>
         </div>
 
-        {/* Results Display */}
+        {/* Transcript */}
         {transcript && (
-          <Card className="w-full mb-6 border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-blue-100 shadow-md">
-            <CardContent className="p-6">
-              <div className="text-center space-y-3">
-                <div className="text-sm font-semibold text-blue-600 uppercase tracking-wide">Bạn đã nói:</div>
-                <div className="text-3xl font-bold text-gray-800 korean-text">{transcript}</div>
-              </div>
+          <Card className="border-2 border-blue-300 bg-gradient-to-br from-blue-50 to-blue-100">
+            <CardContent className="p-6 text-center space-y-2">
+              <p className="text-sm font-semibold text-blue-700 uppercase">Bạn đã nói:</p>
+              <p className="text-4xl font-bold text-gray-800">{transcript}</p>
             </CardContent>
           </Card>
         )}
 
-        {/* Accuracy and Feedback */}
+        {/* Result */}
         {accuracy !== null && (
-          <Card className={`w-full mb-6 border-2 success-animation shadow-lg ${
+          <Card className={`border-4 shadow-xl ${
             accuracy >= 80 ? 'border-green-400 bg-gradient-to-br from-green-50 to-green-100' :
             accuracy >= 60 ? 'border-yellow-400 bg-gradient-to-br from-yellow-50 to-yellow-100' :
+            accuracy >= 40 ? 'border-orange-400 bg-gradient-to-br from-orange-50 to-orange-100' :
             'border-red-400 bg-gradient-to-br from-red-50 to-red-100'
           }`}>
             <CardContent className="p-8 text-center space-y-4">
-              <div className="text-7xl font-bold mb-3 animate-floaty" style={{
+              <div className="text-8xl font-bold" style={{
                 color: accuracy >= 80 ? '#16a34a' :
-                       accuracy >= 60 ? '#ca8a04' : '#dc2626'
+                       accuracy >= 60 ? '#ca8a04' :
+                       accuracy >= 40 ? '#ea580c' : '#dc2626'
               }}>
                 {accuracy}%
               </div>
-              <div className="text-xl font-bold text-gray-800">
+              <div className="text-2xl font-bold text-gray-800">
                 {feedback}
               </div>
-              {accuracy >= 80 && <div className="text-4xl">🎉</div>}
-              {accuracy >= 60 && accuracy < 80 && <div className="text-4xl">👍</div>}
-              {accuracy < 60 && <div className="text-4xl">💪</div>}
             </CardContent>
           </Card>
         )}
@@ -491,28 +381,26 @@ export default function PronunciationPage() {
           <Button
             onClick={handleNext}
             size="lg"
-            className="w-full max-w-sm bg-gradient-to-r from-green-500 via-green-600 to-teal-600 hover:from-green-600 hover:via-green-700 hover:to-teal-700 text-white font-bold py-7 rounded-2xl shadow-xl hover:shadow-2xl transition-all hover:scale-105 text-lg"
+            className="w-full bg-gradient-to-r from-green-500 via-green-600 to-teal-600 hover:from-green-600 hover:via-green-700 hover:to-teal-700 text-white font-bold py-8 text-xl shadow-xl hover:scale-105 transition-all"
           >
-            Tiếp theo →
+            Từ tiếp theo →
           </Button>
         )}
 
-        {/* Skip Option */}
+        {/* Skip Button */}
         {recordingState === 'idle' && (
           <Button
             onClick={handleNext}
             variant="ghost"
-            className="mt-4 text-muted-foreground hover:text-foreground font-medium"
+            className="w-full text-gray-500 hover:text-gray-700 font-medium"
           >
-            Bỏ qua câu này →
+            Bỏ qua →
           </Button>
         )}
       </div>
 
-      {/* Bottom hint - Styled like Duolingo */}
-      <div className="text-center text-base font-bold text-gray-400 uppercase tracking-wider mt-8 pb-8 max-w-md mx-auto">
-        Tạm thời không nói được
-      </div>
+      {/* Bottom spacing */}
+      <div className="h-12"></div>
     </div>
   );
 }
